@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #0f0c29, #302b63, #24243e);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            transition: background 0.5s;
+        }
+        .container {
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 300px;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #bb86fc;
+            border-radius: 5px;
+            background-color: #333;
+            color: #ffffff;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #bb86fc;
+            outline: none;
+        }
+        button {
+            background-color: #bb86fc;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin: 5px 0;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #9b59b6;
+        }
+        #registerMessage {
+            color: #ff6b6b;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Registrar</h2>
+        <input type="text" id="registerUsername" placeholder="Usuário" required>
+        <input type="password" id="registerPassword" placeholder="Senha" required>
+        <button id="registerSubmit">Registrar</button>
+        <p id="registerMessage"></p>
+        <button id="switchToLogin">Login</button>
+    </div>
+
+    <script>
+        document.getElementById('switchToLogin').addEventListener('click', () => {
+            window.location.href = 'login.html';
+        });
+
+        document.getElementById('registerSubmit').addEventListener('click', () => {
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+
+            if (username && password) {
+                localStorage.setItem(username, JSON.stringify({ username, password, saldo: 1000 }));
+                alert('Usuário registrado com sucesso!');
+                window.location.href = 'login.html'; // Redireciona para a página de login
+            } else {
+                document.getElementById('registerMessage').textContent = 'Por favor, preencha todos os campos.';
+            }
+        });
+    </script>
+</body>
+</html>

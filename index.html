@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Crash</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        input {
+            padding: 10px;
+            border: 2px solid #bb86fc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            width: 100%;
+            background-color: #333;
+            color: #ffffff;
+        }
+        button {
+            background-color: #bb86fc;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin: 5px 0;
+        }
+        button:disabled {
+            background-color: #555555;
+        }
+        #grafico {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 20px;
+        }
+        #resultado, #ganhoPotencial, #saldo {
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jogo de Crash</h1>
+    <div class="container" id="mainContainer">
+        <div id="grafico"></div>
+        <div id="saldo">Saldo: R$0.00</div>
+        <div class="controls">
+            <input type="number" id="aposta" placeholder="Valor da Aposta" min="1">
+            <button id="apostar">Apostar</button>
+            <button id="sacar" disabled>Sacar</button>
+        </div>
+        <p id="resultado"></p>
+        <p id="ganhoPotencial"></p>
+        <button id="logoutBtn">Logout</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let multiplicador = 1;
+        let interval;
+        let aposta;
+        let saldo;
+        let currentUser = localStorage.getItem('currentUser');
+
+        if (!currentUser) {
+            alert('Você precisa estar logado para jogar.');
+            window.location.href = 'login.html'; // Redireciona se não estiver logado
+        } else {
+            const userData = JSON.parse(localStorage.getItem(currentUser));
+            saldo = parseFloat(userData.saldo) || 1000.00; // Saldo inicial ou recuperado
+            document.getElementById('saldo').textContent = `Saldo: R$${saldo.toFixed(2)}`;
+        }
+
+        document.getElementById('apostar').addEventListener('click', () => {
+            aposta = parseFloat(document.getElementById('aposta').value);
+            if (isNaN(aposta) || aposta <= 0 || aposta > saldo) {
+                return alert("Valor da aposta deve ser positivo e não pode exceder o saldo disponível.");
+            }
+
+            saldo -= aposta; // Deduz a aposta do saldo
+            document.getElementById('saldo').textContent = `Saldo: R$${saldo.toFixed(2)}`;
+            multiplicador = 1;
+            document.getElementById('resultado').textContent = '';
+            document.getElementById('ganhoPotencial').textContent = '';
+            startGame();
+        });
+
+        function startGame() {
+            document.getElementById('sacar').disabled = false;
+            resetChart(); // Reseta o gráfico ao iniciar um novo jogo
+            updateChart(multiplicador);
+
+            interval = setInterval(() => {
+                multiplicador += 0.1; // Aumenta o multiplicador
+                updateChart(multiplicador);
+                updateGanhoPotencial(multiplicador);
+            }, 100); // Atualiza a cada 100ms
+
+            setTimeout(() => {
+                clearInterval(interval);
+                showCrashEffect(); // Mostra efeito de crash
+            }, 3000); // Dura 3 segundos antes de crashar
+        }
+
+        function showCrashEffect() {
+            multiplicador = Math.random() <= 0.05 ? 10 : (Math.random() * 10); // Limite de 10x
+            document.getElementById('resultado').textContent = `Crash em ${multiplicador.toFixed(2)}x!`;
+            document.getElementById('sacar').disabled = true;
+        }
+
+        document.getElementById('sacar').addEventListener('click', () => {
+            clearInterval(interval);
+            const ganho = (aposta * multiplicador).toFixed(2);
+            saldo += parseFloat(ganho); // Adiciona o ganho ao saldo
+            alert(`Você sacou em ${multiplicador.toFixed(2)}x! Ganhos: R$${ganho}`);
+            document.getElementById('saldo').textContent = `Saldo: R$${saldo.toFixed(2)}`;
+            document.getElementById('resultado').textContent = '';
+            document.getElementById('ganhoPotencial').textContent = '';
+            document.getElementById('sacar').disabled = true;
+
+            localStorage.setItem(currentUser, JSON.stringify({ username: currentUser, password: userData.password, saldo })); // Atualiza saldo do usuário
+            resetChart(); // Reseta o gráfico ao sacar
+        });
+
+        const ctx = document.createElement('canvas');
+        document.getElementById('grafico').appendChild(ctx);
+        ctx.width = 400; // Largura do gráfico
+        ctx.height = 200; // Altura do gráfico
+
+        let chart = null; // Declaração da variável do gráfico
+
+        function resetChart() {
+            if (chart) {
+                chart.destroy(); // Destroi o gráfico anterior
+            }
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 30 }, (_, i) => `${i}s`),
+                    datasets: [{
+                        label: 'Multiplicador',
+                        data: [1],
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        fill: false,
+                        borderWidth: 2,
+                        tension: 0.1,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10, // Limite máximo para 10x
+                            title: {
+                                display: true,
+                                text: 'Multiplicador',
+                                font: {
+                                    size: 12
+                                },
+                                color: '#ffffff'
+                            },
+                            ticks: {
+                                color: '#ffffff'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tempo',
+                                font: {
+                                    size: 12
+                                },
+                                color: '#ffffff'
+                            },
+                            ticks: {
+                                color: '#ffffff'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#ffffff'
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }
+            });
+        }
+
+        function updateChart(multiplicador) {
+            chart.data.datasets[0].data.push(multiplicador);
+            chart.update();
+        }
+
+        function updateGanhoPotencial(multiplicador) {
+            const ganho = (aposta * multiplicador).toFixed(2);
+            document.getElementById('ganhoPotencial').textContent = `Ganho Potencial: R$${ganho}`;
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('currentUser'); // Remove o usuário logado
+            window.location.href = 'login.html'; // Redireciona para login
+        });
+    </script>
+</body>
+</html>
